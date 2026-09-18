@@ -265,7 +265,7 @@
   <div class="campo" id="f-separador" data-label="Separador"></div>
 </div>
 
-<script src="mock-data.js"></script>
+<script src="config.js"></script>
 <script>
 // ─── Posiciones predeterminadas calibradas (% de 297mm alto / 210mm ancho)
 const BASE = {
@@ -454,18 +454,26 @@ function cargarFondo(input) {
 }
 
 // ─── Init ─────────────────────────────────────────────────────────
-const q = new URLSearchParams(location.search).get("orden") || "";
-const orden = MOCK_ORDERS.find(o =>
-  [o.order, o.order2, o.rma].map(v => v.toLowerCase()).includes(q.toLowerCase())
-) || MOCK_ORDERS[0];
-
-cargarOrden(orden);
 buildFontControls();
 Object.keys(BASE).forEach(id => {
   setPos(id, BASE[id].top, BASE[id].left);
   activarDrag(document.getElementById(id));
   applyFont(id);
 });
+
+(async function initOrden() {
+  const q = new URLSearchParams(location.search).get("orden") || "";
+  if (!q) {
+    alert("No se indicó número de orden (?orden=...)");
+    return;
+  }
+  try {
+    const orden = await fetchOrder(q);
+    cargarOrden(orden);
+  } catch (err) {
+    alert(err.message || "No se pudo cargar la orden desde la API");
+  }
+})();
 </script>
 </body>
 </html>
