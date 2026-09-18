@@ -1,0 +1,21 @@
+{
+  "name": "logintec-flash-api",
+  "version": "1.0.0",
+  "private": true,
+  "description": "API webhook eTrac / Flash para remitos Logintec",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node --watch server/index.js",
+    "db:migrate": "node server/migrate.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "pg": "^8.13.3"
+  }
+}

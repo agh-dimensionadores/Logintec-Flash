@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Remito — Calibración e Impresión</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #e2e8f0;
+      margin: 0;
+      padding: 1rem;
+    }
+
+    .panel {
+      background: #1e293b;
+      color: #f1f5f9;
+      border-radius: 10px;
+      padding: 0.85rem 1.25rem;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+    }
+    .panel h2 { margin: 0; font-size: 0.95rem; color: #93c5fd; }
+    .panel p  { margin: 0.2rem 0 0; font-size: 0.75rem; color: #64748b; }
+
+    .btn-print {
+      padding: 0.5rem 1.2rem;
+      background: #3b82f6;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .btn-print:hover { background: #2563eb; }
+
+    .btn-reset {
+      padding: 0.5rem 1rem;
+      background: transparent;
+      color: #94a3b8;
+      border: 1px solid #334155;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      cursor: pointer;
+    }
+    .btn-reset:hover { color: #f1f5f9; border-color: #64748b; }
+
+    .coords-grid {
+      display: flex;
+      gap: 0.4rem;
+      flex-wrap: wrap;
+      flex: 1;
+    }
+    .coord-chip {
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 6px;
+      padding: 0.2rem 0.55rem;
+      font-size: 0.68rem;
+      color: #94a3b8;
+      white-space: nowrap;
+    }
+    .coord-chip strong { color: #e2e8f0; }
+
+    .font-controls {
+      display: flex;
+      gap: 0.4rem;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .font-row {
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 6px;
+      padding: 0.2rem 0.5rem;
+      font-size: 0.7rem;
+      color: #94a3b8;
+      white-space: nowrap;
+    }
+    .font-row strong { color: #e2e8f0; margin-right: 0.2rem; }
+    .font-row button {
+      width: 20px; height: 20px;
+      background: #1e3a5f;
+      color: #93c5fd;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      line-height: 1;
+      padding: 0;
+    }
+    .font-row button:hover { background: #2563eb; color: #fff; }
+    .font-row .sz { min-width: 28px; text-align: center; color: #f1f5f9; }
+
+    /* Hoja A4 */
+    .page {
+      width: 210mm;
+      height: 297mm;
+      background: white;
+      position: relative;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.18);
+      margin: 0 auto;
+      overflow: hidden;
+    }
+
+    /* Imagen de fondo del remito (solo pantalla) */
+    .page__bg {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: fill;
+      pointer-events: none;
+      opacity: 0.35;
+      display: none; /* se muestra cuando hay imagen cargada */
+    }
+
+    /* Control de opacidad */
+    .bg-controls {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 6px;
+      padding: 0.3rem 0.7rem;
+      font-size: 0.75rem;
+      color: #94a3b8;
+      white-space: nowrap;
+    }
+    .bg-controls strong { color: #93c5fd; }
+    .bg-controls input[type=range] {
+      width: 80px;
+      accent-color: #3b82f6;
+    }
+    .bg-controls label.upload-btn {
+      padding: 0.2rem 0.6rem;
+      background: #1e3a5f;
+      color: #93c5fd;
+      border: 1px solid #2563eb;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.72rem;
+    }
+    .bg-controls label.upload-btn:hover { background: #2563eb; color: #fff; }
+    .bg-controls input[type=file] { display: none; }
+
+    /* Campos arrastrables */
+    .campo {
+      position: absolute;
+      font-family: Arial, sans-serif;
+      font-size: 9pt;
+      color: #000;
+      line-height: 1.2;
+      white-space: pre;
+      cursor: grab;
+      user-select: none;
+      outline: 1px dashed rgba(59,130,246,0.55);
+      padding: 1px 3px;
+      border-radius: 2px;
+      box-sizing: border-box;
+    }
+    .campo:hover  { outline-color: #2563eb; background: rgba(219,234,254,0.35); }
+    .campo.drag   { cursor: grabbing; outline: 2px solid #2563eb; background: rgba(219,234,254,0.55); z-index: 999; }
+
+    /* Etiqueta de nombre */
+    .campo::before {
+      content: attr(data-label);
+      position: absolute;
+      top: -13px; left: 0;
+      font-size: 6pt;
+      font-family: monospace;
+      color: #3b82f6;
+      background: white;
+      padding: 0 2px;
+      pointer-events: none;
+      white-space: nowrap;
+    }
+
+    #f-det-header, #f-col-part-head, #f-col-part, #f-col-serial-head, #f-col-serial, #f-col-qty-head, #f-col-qty {
+      font-size: 8.5pt;
+      white-space: pre;
+    }
+
+    #f-col-qty-head,
+    #f-col-qty {
+      text-align: right;
+    }
+
+    /* Línea separadora — usa borde, no fondo (imprime siempre) */
+    #f-separador {
+      width: 168mm;
+      height: 0 !important;
+      padding: 0 !important;
+      border: none;
+      border-top: 1px solid #000;
+      background: transparent !important;
+      outline: 1px dashed rgba(59,130,246,0.55);
+    }
+
+    @media print {
+      body  { background: none; padding: 0; margin: 0; }
+      .panel { display: none !important; }
+      .page  { box-shadow: none; margin: 0; }
+      .page__bg { display: none !important; }
+      .campo { outline: none !important; background: transparent !important; padding: 0; cursor: default; }
+      #f-separador {
+        outline: none !important;
+        border-top: 1px solid #000 !important;
+        height: 0 !important;
+        display: block !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      .campo::before { display: none; }
+      @page  { size: A4; margin: 0; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="panel">
+  <div>
+    <h2>Arrastrá cada campo a su lugar</h2>
+    <p>Posicioná los textos, imprimí en blanco y comparás con el remito real.</p>
+  </div>
+  <div class="coords-grid" id="coordsGrid"></div>
+  <div class="font-controls" id="fontControls"></div>
+  <div class="bg-controls">
+    <strong>Fondo remito</strong>
+    <label class="upload-btn">
+      📂 Cargar imagen
+      <input type="file" id="bgUpload" accept="image/*" onchange="cargarFondo(this)" />
+    </label>
+    <input type="range" id="bgOpacity" min="0" max="1" step="0.05" value="0.35"
+      oninput="document.getElementById('bgImg').style.opacity=this.value; document.getElementById('bgOpVal').textContent=Math.round(this.value*100)+'%'" />
+    <span id="bgOpVal">35%</span>
+  </div>
+  <div style="display:flex;gap:0.5rem;">
+    <button class="btn-reset" onclick="resetPosiciones()">↺ Resetear</button>
+    <button class="btn-print" onclick="window.print()">🖨 Imprimir</button>
+  </div>
+</div>
+
+<div class="page" id="pagina">
+  <img id="bgImg" class="page__bg" src="" alt="" />
+  <span class="campo" id="f-dia"        data-label="Día">DD</span>
+  <span class="campo" id="f-mes"        data-label="Mes">MM</span>
+  <span class="campo" id="f-anio"       data-label="Año">AAAA</span>
+  <span class="campo" id="f-senores"     data-label="Señor/es">-</span>
+  <span class="campo" id="f-domicilio"   data-label="Domicilio">-</span>
+  <span class="campo" id="f-det-header"    data-label="Detalle cabecera">-</span>
+  <span class="campo" id="f-col-part-head" data-label="Titulo Part">PART NUMBER</span>
+  <span class="campo" id="f-col-part"      data-label="Valores Part">-</span>
+  <span class="campo" id="f-col-serial-head" data-label="Titulo Serial">SERIAL</span>
+  <span class="campo" id="f-col-serial"    data-label="Valores Serial">-</span>
+  <span class="campo" id="f-col-qty-head"   data-label="Titulo Qty">QTY</span>
+  <span class="campo" id="f-col-qty"        data-label="Valores Qty">-</span>
+  <div class="campo" id="f-separador" data-label="Separador"></div>
+</div>
+
+<script src="mock-data.js"></script>
+<script>
+// ─── Posiciones predeterminadas calibradas (% de 297mm alto / 210mm ancho)
+const BASE = {
+  "f-dia":             { top: 16.7003, left: 67.3333 },  // 49.6 / 141.4
+  "f-mes":             { top: 16.7003, left: 72.6190 },  // 49.6 / 152.5
+  "f-anio":            { top: 16.7003, left: 76.7143 },  // 49.6 / 161.1
+  "f-senores":         { top: 25.5892, left: 18.1905 },  // 76.0 / 38.2
+  "f-domicilio":       { top: 29.0909, left: 17.6190 },  // 86.4 / 37.0
+  "f-det-header":      { top: 55.0168, left: 12.6667 },  // 163.4 / 26.6
+  "f-col-part-head":   { top: 61.9529, left:  8.7143 },  // 184.0 / 18.3
+  "f-col-part":        { top: 65.8923, left:  8.5714 },  // 195.7 / 18.0
+  "f-col-serial-head": { top: 61.9529, left: 39.4286 },  // 184.0 / 82.8
+  "f-col-serial":      { top: 65.9596, left: 39.4286 },  // 195.9 / 82.8
+  "f-col-qty-head":    { top: 61.5152, left: 87.6667 },  // 182.7 / 184.1
+  "f-col-qty":         { top: 65.1852, left: 88.9524 },  // 193.6 / 186.8
+  "f-separador":       { top: 59.0236, left: 10.0000 },  // 175.3 / 21.0
+};
+
+const LABELS = {
+  "f-dia":"Día","f-mes":"Mes","f-anio":"Año",
+  "f-senores":"Señor/es","f-domicilio":"Domicilio",
+  "f-det-header":"Det. cabecera",
+  "f-col-part-head":"Tit. Part",
+  "f-col-part":"Vals Part",
+  "f-col-serial-head":"Tit. Serial",
+  "f-col-serial":"Vals Serial",
+  "f-col-qty-head":"Tit. Qty",
+  "f-col-qty":"Vals Qty",
+  "f-separador":"Línea"
+};
+
+const curPos = {};
+
+function setPos(id, topPct, leftPct) {
+  curPos[id] = { top: topPct, left: leftPct };
+  const el = document.getElementById(id);
+  el.style.top  = topPct  + "%";
+  el.style.left = leftPct + "%";
+  updateChip(id, topPct, leftPct);
+}
+
+function resetPosiciones() {
+  Object.keys(BASE).forEach(id => setPos(id, BASE[id].top, BASE[id].left));
+  Object.assign(fontSizes, FONT_DEFAULTS);
+  Object.keys(FONT_DEFAULTS).forEach(id => applyFont(id));
+}
+
+function updateChip(id, t, l) {
+  const cid = "chip-" + id;
+  let chip = document.getElementById(cid);
+  if (!chip) {
+    chip = document.createElement("span");
+    chip.id = cid;
+    chip.className = "coord-chip";
+    document.getElementById("coordsGrid").appendChild(chip);
+  }
+  // Convertir % de vuelta a mm para mostrarlo legible
+  const topMm  = (t / 100 * 297).toFixed(1);
+  const leftMm = (l / 100 * 210).toFixed(1);
+  chip.innerHTML = `<strong>${LABELS[id]}</strong> ↕${topMm}mm ↔${leftMm}mm`;
+}
+
+// ─── Drag usando getBoundingClientRect ───────────────────────────
+function activarDrag(el) {
+  el.addEventListener("mousedown", e => {
+    if (e.button !== 0) return;
+    e.preventDefault();
+    e.stopPropagation();
+
+    const page     = document.getElementById("pagina");
+    const pageRect = page.getBoundingClientRect();
+    const elRect   = el.getBoundingClientRect();
+
+    // Offset del click dentro del elemento
+    const clickOffX = e.clientX - elRect.left;
+    const clickOffY = e.clientY - elRect.top;
+
+    el.classList.add("drag");
+
+    function onMove(e) {
+      // Posición del mouse relativa a la hoja
+      let newLeft = e.clientX - pageRect.left - clickOffX;
+      let newTop  = e.clientY - pageRect.top  - clickOffY;
+
+      // Convertir px a % de la hoja
+      const topPct  = Math.max(0, Math.min(95, newTop  / pageRect.height * 100));
+      const leftPct = Math.max(0, Math.min(95, newLeft / pageRect.width  * 100));
+
+      setPos(el.id, topPct, leftPct);
+    }
+
+    function onUp() {
+      el.classList.remove("drag");
+      document.removeEventListener("mousemove", onMove);
+      document.removeEventListener("mouseup",   onUp);
+    }
+
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup",   onUp);
+  });
+}
+
+// ─── Cargar datos de la orden ─────────────────────────────────────
+function cargarOrden(o) {
+  const hoy  = new Date();
+  const dd   = String(hoy.getDate()).padStart(2,"0");
+  const mm   = String(hoy.getMonth()+1).padStart(2,"0");
+  const yyyy = hoy.getFullYear();
+
+  document.getElementById("f-dia").textContent  = dd;
+  document.getElementById("f-mes").textContent  = mm;
+  document.getElementById("f-anio").textContent = yyyy;
+
+  const s = o.shipTo || {};
+  document.getElementById("f-senores").textContent =
+    [s.company, s.contact].filter(Boolean).join("   ");
+  document.getElementById("f-domicilio").textContent =
+    [s.address, s.city, s.zip].filter(v => v && v !== "—").join("   ");
+  document.getElementById("f-det-header").textContent =
+    `Customer: ${o.customer}    Order 2: ${o.order2}    RMA: ${o.rma}`;
+
+  const partLines = o.lines.map(l => l.part);
+  const serialLines = o.lines.map(l => (l.serial !== "—" ? l.serial : "(sin serial)"));
+  const qtyLines = o.lines.map(l => String(l.qty));
+
+  document.getElementById("f-col-part-head").textContent = "PART NUMBER";
+  document.getElementById("f-col-part").textContent = partLines.join("\n");
+  document.getElementById("f-col-serial-head").textContent = "SERIAL";
+  document.getElementById("f-col-serial").textContent = serialLines.join("\n");
+  document.getElementById("f-col-qty-head").textContent = "QTY";
+  document.getElementById("f-col-qty").textContent = qtyLines.join("\n");
+}
+
+// ─── Tamaños de fuente ────────────────────────────────────────────
+const FONT_DEFAULTS = {
+  "f-dia": 12.5, "f-mes": 12.5, "f-anio": 12,
+  "f-senores": 12, "f-domicilio": 12,
+  "f-det-header": 13,
+  "f-col-part-head": 13, "f-col-part": 13,
+  "f-col-serial-head": 13, "f-col-serial": 13,
+  "f-col-qty-head": 13, "f-col-qty": 13
+  // f-separador no tiene fuente
+};
+const fontSizes = { ...FONT_DEFAULTS };
+
+function buildFontControls() {
+  const container = document.getElementById("fontControls");
+  Object.keys(LABELS).filter(id => id !== "f-separador").forEach(id => {
+    const row = document.createElement("div");
+    row.className = "font-row";
+    row.innerHTML = `
+      <strong>${LABELS[id]}</strong>
+      <button onclick="changeFont('${id}',-0.5)">−</button>
+      <span class="sz" id="sz-${id}">${fontSizes[id]}pt</span>
+      <button onclick="changeFont('${id}',+0.5)">+</button>
+    `;
+    container.appendChild(row);
+  });
+}
+
+function applyFont(id) {
+  if (fontSizes[id] === undefined) return;
+  document.getElementById(id).style.fontSize = fontSizes[id] + "pt";
+  const badge = document.getElementById("sz-" + id);
+  if (badge) badge.textContent = fontSizes[id] + "pt";
+}
+
+function changeFont(id, delta) {
+  if (fontSizes[id] === undefined) return;
+  fontSizes[id] = Math.max(5, Math.min(20, fontSizes[id] + delta));
+  applyFont(id);
+}
+
+// ─── Imagen de fondo ──────────────────────────────────────────────
+function cargarFondo(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const img = document.getElementById("bgImg");
+    img.src = e.target.result;
+    img.style.display = "block";
+    img.style.opacity = document.getElementById("bgOpacity").value;
+  };
+  reader.readAsDataURL(file);
+}
+
+// ─── Init ─────────────────────────────────────────────────────────
+const q = new URLSearchParams(location.search).get("orden") || "";
+const orden = MOCK_ORDERS.find(o =>
+  [o.order, o.order2, o.rma].map(v => v.toLowerCase()).includes(q.toLowerCase())
+) || MOCK_ORDERS[0];
+
+cargarOrden(orden);
+buildFontControls();
+Object.keys(BASE).forEach(id => {
+  setPos(id, BASE[id].top, BASE[id].left);
+  activarDrag(document.getElementById(id));
+  applyFont(id);
+});
+</script>
+</body>
+</html>
+
+
+
+
+
+
