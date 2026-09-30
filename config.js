@@ -29,7 +29,7 @@ async function fetchOrder(orderNumber) {
     throw err;
   }
 
-  return res.json();
+  return splitShipTo(await res.json());
 }
 
 async function fetchOrders(query = "", limit = 100) {
@@ -52,6 +52,6 @@ async function fetchOrders(query = "", limit = 100) {
   const data = await res.json();
   return {
     count: data.count || 0,
-    orders: Array.isArray(data.orders) ? data.orders : [],
+    orders: Array.isArray(data.orders) ? data.orders.map(splitShipTo) : [],
   };
 }

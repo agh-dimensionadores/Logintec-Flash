@@ -499,7 +499,7 @@ body {
 
 .ship-card__grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 0.85rem 1.25rem;
 }
 
@@ -568,6 +568,26 @@ body {
   background: var(--bg);
 }
 
+.item-row--head {
+  margin: 0 0.5rem;
+  padding-top: 0.9rem;
+  padding-bottom: 0.1rem;
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.item-row--head:hover {
+  background: none;
+}
+
+.item-row--head span:last-child {
+  min-width: 40px;
+  text-align: center;
+}
+
 .item-row__part {
   font-weight: 600;
   font-size: 0.875rem;
@@ -629,5 +649,9 @@ body {
 
   .item-row__serial {
     grid-column: 1 / -1;
+  }
+
+  .item-row--head {
+    display: none;
   }
 }

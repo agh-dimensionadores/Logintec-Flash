@@ -47,6 +47,11 @@ function escapeHtml(str) {
     .replace(/"/g, "&quot;");
 }
 
+function itemLocation(line) {
+  const bin = /Bin Number:\s*([^;]+)/i.exec(line.partDescription || "");
+  return bin ? bin[1].trim() : line.part || "—";
+}
+
 function hideAllViews() {
   els.emptyState.classList.add("hidden");
   els.loadingState.classList.add("hidden");
@@ -137,7 +142,7 @@ function renderOrder(data) {
     .map(
       (line) => `
       <div class="item-row">
-        <span class="item-row__part">${escapeHtml(line.part)}</span>
+        <span class="item-row__part">${escapeHtml(itemLocation(line))}</span>
         <span class="item-row__serial">${
           line.serial && line.serial !== "—"
             ? "S/N " + escapeHtml(line.serial)

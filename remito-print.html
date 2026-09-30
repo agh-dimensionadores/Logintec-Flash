@@ -265,6 +265,7 @@
   <div class="campo" id="f-separador" data-label="Separador"></div>
 </div>
 
+<script src="address.js"></script>
 <script src="config.js"></script>
 <script>
 // ─── Posiciones predeterminadas calibradas (% de 297mm alto / 210mm ancho)
@@ -369,19 +370,21 @@ function activarDrag(el) {
 }
 
 // ─── Cargar datos de la orden ─────────────────────────────────────
-function cargarOrden(o) {
+function ponerFechaDeHoy() {
   const hoy  = new Date();
-  const dd   = String(hoy.getDate()).padStart(2,"0");
-  const mm   = String(hoy.getMonth()+1).padStart(2,"0");
-  const yyyy = hoy.getFullYear();
+  document.getElementById("f-dia").textContent  = String(hoy.getDate()).padStart(2,"0");
+  document.getElementById("f-mes").textContent  = String(hoy.getMonth()+1).padStart(2,"0");
+  document.getElementById("f-anio").textContent = hoy.getFullYear();
+}
 
-  document.getElementById("f-dia").textContent  = dd;
-  document.getElementById("f-mes").textContent  = mm;
-  document.getElementById("f-anio").textContent = yyyy;
+window.addEventListener("beforeprint", ponerFechaDeHoy);
+
+function cargarOrden(o) {
+  ponerFechaDeHoy();
 
   const s = o.shipTo || {};
   document.getElementById("f-senores").textContent =
-    [s.company, s.contact].filter(Boolean).join("   ");
+    s.company && s.company !== "—" ? s.company : "";
   document.getElementById("f-domicilio").textContent =
     [s.address, s.city, s.zip].filter(v => v && v !== "—").join("   ");
   document.getElementById("f-det-header").textContent =
