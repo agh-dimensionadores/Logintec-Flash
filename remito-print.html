@@ -265,8 +265,8 @@
   <div class="campo" id="f-separador" data-label="Separador"></div>
 </div>
 
-<script src="address.js"></script>
-<script src="config.js"></script>
+<script src="address.js?v=5"></script>
+<script src="config.js?v=5"></script>
 <script>
 // ─── Posiciones predeterminadas calibradas (% de 297mm alto / 210mm ancho)
 const BASE = {
@@ -390,7 +390,7 @@ function cargarOrden(o) {
   document.getElementById("f-det-header").textContent =
     `Customer: ${o.customer}    Order 2: ${o.order2}    RMA: ${o.rma}`;
 
-  const partLines = o.lines.map(l => l.part);
+  const partLines = o.lines.map(l => (l.partNumber && l.partNumber !== "—" ? l.partNumber : ""));
   const serialLines = o.lines.map(l => (l.serial !== "—" ? l.serial : "(sin serial)"));
   const qtyLines = o.lines.map(l => String(l.qty));
 

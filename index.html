@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="styles.css?v=5" />
 </head>
 <body>
   <div class="layout">
@@ -75,7 +75,13 @@
         <section id="listSection" class="list-section hidden">
           <div class="list-section__head">
             <h2>Órdenes</h2>
-            <span class="list-section__count" id="listCount">0</span>
+            <div class="list-section__tools">
+              <select id="sortSelect" class="list-section__sort" aria-label="Ordenar órdenes">
+                <option value="desc">Recibidas: más nuevas primero</option>
+                <option value="asc">Recibidas: más viejas primero</option>
+              </select>
+              <span class="list-section__count" id="listCount">0</span>
+            </div>
           </div>
           <div class="order-list" id="orderList"></div>
         </section>
@@ -190,7 +196,7 @@
               <span class="items-section__count" id="lineCount">0 líneas</span>
             </div>
             <div class="item-row item-row--head">
-              <span>Location</span>
+              <span>Part Number</span>
               <span>Serial</span>
               <span>Qty</span>
             </div>
@@ -201,8 +207,8 @@
     </div>
   </div>
 
-  <script src="address.js"></script>
-  <script src="config.js"></script>
-  <script src="app.js"></script>
+  <script src="address.js?v=5"></script>
+  <script src="config.js?v=5"></script>
+  <script src="app.js?v=5"></script>
 </body>
 </html>

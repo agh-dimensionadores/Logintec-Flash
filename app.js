@@ -11,6 +11,7 @@ const els = {
   listSection: $("#listSection"),
   orderList: $("#orderList"),
   listCount: $("#listCount"),
+  sortSelect: $("#sortSelect"),
   resultSection: $("#resultSection"),
   resultTitle: $("#resultTitle"),
   statusBadge: $("#statusBadge"),
@@ -31,6 +32,7 @@ const els = {
 };
 
 let currentOrder = null;
+let lastListOrders = [];
 
 function formatDate(iso) {
   if (!iso || iso === "—") return "—";
@@ -45,11 +47,6 @@ function escapeHtml(str) {
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;");
-}
-
-function itemLocation(line) {
-  const bin = /Bin Number:\s*([^;]+)/i.exec(line.partDescription || "");
-  return bin ? bin[1].trim() : line.part || "—";
 }
 
 function hideAllViews() {
@@ -82,9 +79,24 @@ function setSearching(isLoading) {
   els.searchBtn.textContent = isLoading ? "Buscando…" : "Buscar";
 }
 
+function formatDateTime(iso) {
+  const d = iso ? new Date(iso) : null;
+  if (!d || Number.isNaN(d.getTime())) return "—";
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function sortByReceived(orders) {
+  const dir = els.sortSelect.value === "asc" ? 1 : -1;
+  return [...orders].sort(
+    (a, b) => dir * (new Date(a.createdAt || 0) - new Date(b.createdAt || 0))
+  );
+}
+
 function renderOrderList(orders) {
   hideAllViews();
   currentOrder = null;
+  lastListOrders = orders;
 
   if (!orders.length) {
     els.emptyState.classList.remove("hidden");
@@ -92,7 +104,7 @@ function renderOrderList(orders) {
   }
 
   els.listCount.textContent = `${orders.length} orden${orders.length !== 1 ? "es" : ""}`;
-  els.orderList.innerHTML = orders
+  els.orderList.innerHTML = sortByReceived(orders)
     .map((o) => {
       const ship = o.shipTo || {};
       const lines = Array.isArray(o.lines) ? o.lines.length : 0;
@@ -103,6 +115,7 @@ function renderOrderList(orders) {
             <span class="order-list__customer">${escapeHtml(o.customer || "—")}</span>
           </div>
           <div class="order-list__meta">
+            <span>Recibida ${escapeHtml(formatDateTime(o.createdAt))}</span>
             <span>${escapeHtml(ship.company || "—")}</span>
             <span>ETA ${escapeHtml(formatDate(o.eta))}</span>
             <span>${lines} ítem${lines !== 1 ? "s" : ""}</span>
@@ -142,7 +155,7 @@ function renderOrder(data) {
     .map(
       (line) => `
       <div class="item-row">
-        <span class="item-row__part">${escapeHtml(itemLocation(line))}</span>
+        <span class="item-row__part">${escapeHtml(line.partNumber)}</span>
         <span class="item-row__serial">${
           line.serial && line.serial !== "—"
             ? "S/N " + escapeHtml(line.serial)
@@ -224,6 +237,8 @@ els.orderList.addEventListener("click", (e) => {
   els.input.value = row.dataset.order;
   search();
 });
+
+els.sortSelect.addEventListener("change", () => renderOrderList(lastListOrders));
 
 els.searchBtn.addEventListener("click", search);
 els.clearBtn.addEventListener("click", clearSearch);

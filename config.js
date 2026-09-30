@@ -2,6 +2,27 @@
 const API_BASE = "https://apilogintec-f9r0.onrender.com";
 const API_KEY = "aghlogintec2025";
 
+/** eTrac manda "Part Number: NTK850DC; Bin Number: EZEA001C;" en partDescription */
+function descField(desc, label) {
+  const m = new RegExp(label + ":\\s*([^;]+)", "i").exec(desc || "");
+  return m ? m[1].trim() : null;
+}
+
+function splitItemFields(order) {
+  if (!order || !Array.isArray(order.lines)) return order;
+  const lines = order.lines.map((line) => {
+    const partNumber = descField(line.partDescription, "Part Number");
+    const location = descField(line.partDescription, "Bin Number");
+    const rawPart = line.part && line.part !== location ? line.part : null;
+    return { ...line, partNumber: partNumber || rawPart || "—" };
+  });
+  return { ...order, lines };
+}
+
+function prepareOrder(order) {
+  return splitItemFields(splitShipTo(order));
+}
+
 async function fetchOrder(orderNumber) {
   const q = String(orderNumber || "").trim();
   if (!q) throw new Error("Ingresá un número de orden");
@@ -29,7 +50,7 @@ async function fetchOrder(orderNumber) {
     throw err;
   }
 
-  return splitShipTo(await res.json());
+  return prepareOrder(await res.json());
 }
 
 async function fetchOrders(query = "", limit = 100) {
@@ -52,6 +73,6 @@ async function fetchOrders(query = "", limit = 100) {
   const data = await res.json();
   return {
     count: data.count || 0,
-    orders: Array.isArray(data.orders) ? data.orders.map(splitShipTo) : [],
+    orders: Array.isArray(data.orders) ? data.orders.map(prepareOrder) : [],
   };
 }
