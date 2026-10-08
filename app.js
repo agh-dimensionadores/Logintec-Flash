@@ -57,13 +57,21 @@ function hideAllViews() {
   els.resultSection.classList.add("hidden");
 }
 
+function badgeClass(type) {
+  if (type === "shipped") return "status-pill status-pill--shipped";
+  if (type === "rma") return "status-pill status-pill--rma";
+  return "status-pill status-pill--pending";
+}
+
 function setBadge(status, type) {
   els.statusBadge.textContent = status || "Recibido";
-  els.statusBadge.className = "status-pill";
-  if (type === "pending") els.statusBadge.classList.add("status-pill--pending");
-  else if (type === "shipped") els.statusBadge.classList.add("status-pill--shipped");
-  else if (type === "rma") els.statusBadge.classList.add("status-pill--rma");
-  else els.statusBadge.classList.add("status-pill--pending");
+  els.statusBadge.className = badgeClass(type);
+}
+
+function setField(el, value) {
+  const text = value && value !== "—" ? String(value) : "—";
+  el.textContent = text;
+  el.classList.toggle("is-muted", text === "—");
 }
 
 function showError(message) {
@@ -110,16 +118,20 @@ function renderOrderList(orders) {
       const lines = Array.isArray(o.lines) ? o.lines.length : 0;
       return `
         <button type="button" class="order-list__row" data-order="${escapeHtml(o.order)}">
-          <div class="order-list__main">
-            <span class="order-list__id">#${escapeHtml(o.order)}</span>
-            <span class="order-list__customer">${escapeHtml(o.customer || "—")}</span>
+          <div class="order-list__body">
+            <div class="order-list__main">
+              <span class="order-list__id">#${escapeHtml(o.order)}</span>
+              <span class="order-list__customer">${escapeHtml(o.customer || "—")}</span>
+            </div>
+            <div class="order-list__meta">
+              <span>Recibida ${escapeHtml(formatDateTime(o.createdAt))}</span>
+              <span>${escapeHtml(ship.company || "—")}</span>
+              <span>ETA ${escapeHtml(formatDate(o.eta))}</span>
+              <span>${lines} ítem${lines !== 1 ? "s" : ""}</span>
+            </div>
           </div>
-          <div class="order-list__meta">
-            <span>Recibida ${escapeHtml(formatDateTime(o.createdAt))}</span>
-            <span>${escapeHtml(ship.company || "—")}</span>
-            <span>ETA ${escapeHtml(formatDate(o.eta))}</span>
-            <span>${lines} ítem${lines !== 1 ? "s" : ""}</span>
-          </div>
+          <span class="${badgeClass(o.statusType)}">${escapeHtml(o.status || "Recibido")}</span>
+          <svg class="order-list__chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
         </button>`;
     })
     .join("");
@@ -135,20 +147,20 @@ function renderOrder(data) {
   els.resultTitle.textContent = `#${data.order}`;
   setBadge(data.status, data.statusType);
 
-  els.fieldOrder.textContent = data.order || "—";
-  els.fieldOrder2.textContent = data.order2 || "—";
-  els.fieldRma.textContent = data.rma || "—";
-  els.fieldCustomer.textContent = data.customer || "—";
-  els.fieldOrderDate.textContent = formatDate(data.orderDate);
-  els.fieldEta.textContent = formatDate(data.eta);
+  setField(els.fieldOrder, data.order);
+  setField(els.fieldOrder2, data.order2);
+  setField(els.fieldRma, data.rma);
+  setField(els.fieldCustomer, data.customer);
+  setField(els.fieldOrderDate, formatDate(data.orderDate));
+  setField(els.fieldEta, formatDate(data.eta));
 
   const ship = data.shipTo || {};
-  els.fieldShipCompany.textContent = ship.company || "—";
-  els.fieldShipContact.textContent = ship.contact || "—";
-  els.fieldShipPhone.textContent = ship.phone || "—";
-  els.fieldShipAddress.textContent = ship.address || "—";
-  els.fieldShipCity.textContent = ship.city || "—";
-  els.fieldShipZip.textContent = ship.zip || "—";
+  setField(els.fieldShipCompany, ship.company);
+  setField(els.fieldShipContact, ship.contact);
+  setField(els.fieldShipPhone, ship.phone);
+  setField(els.fieldShipAddress, ship.address);
+  setField(els.fieldShipCity, ship.city);
+  setField(els.fieldShipZip, ship.zip);
 
   const lines = Array.isArray(data.lines) ? data.lines : [];
   els.detailBody.innerHTML = lines
